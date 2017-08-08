@@ -1,0 +1,456 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Introduction to functional data types in F#</title>
+    <meta name="description" content="Introduction to React Native with F#">
+    <meta name="author" content="Mark Vincze">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="//code.jquery.com/jquery-1.8.0.js"></script>
+    <script src="//code.jquery.com/ui/1.8.23/jquery-ui.js"></script>
+    <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.1/css/bootstrap-combined.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/white.css" id="theme">
+    <link type="text/css" rel="stylesheet" href="fsharp.formatting/styles/style.css" />
+    <link type="text/css" rel="stylesheet" href="fsharp.formatting/styles/deedle.css" />
+    <link type="text/css" rel="stylesheet" href="css/custom.css" />
+    <script src="fsharp.formatting/styles/tips.js" type="text/javascript"></script>
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+    <link rel="stylesheet" href="css/fsreveal.css">
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+			if( window.location.search.match( /print-pdf/gi ) ) {
+				var link = document.createElement( 'link' );
+				link.rel = 'stylesheet';
+				link.type = 'text/css';
+				link.href = 'css/print/pdf.css';
+				document.getElementsByTagName( 'head' )[0].appendChild( link );
+			}
+    </script>
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+    <script language="javascript" type="text/javascript">
+        function init()
+        {
+            websocket = new WebSocket("wss://"+window.location.host+"/websocket");
+            websocket.onmessage = function(evt) { location.reload(); };
+        }
+        window.addEventListener("load", init, false);
+    </script>
+</head>
+<body>
+    <div class="reveal">
+        
+        <!-- Any section element inside of this container is displayed as a slide -->
+        <div class="slides">
+            <section >
+<h1>Introduction to<br />functional data types in F#</h1>
+<p><br />
+<br />
+Mark Vincze - <a href="http://www.twitter.com/mrkvincze">@mrkvincze</a></p>
+</section>
+<section >
+<h2>The plan</h2>
+<ol>
+<li>Sample problem</li>
+<li>Implement in C#</li>
+<li>Basics of F# data types</li>
+<li>Implement in F#</li>
+</ol>
+</section>
+<section >
+<h2>The exercise</h2>
+<ul>
+    <li>Implement a data model for the standard 52-card deck (French playing cards)</li>
+        <img style="margin: 0px; width: 30%; background: none; border: none; float: right" src="images/playing-cards.png"></img>
+    <ul>
+        <li>4 suits: <span style="color: red"> ♦ ♥ </span> ♣ ♠</li>
+        <li>9 value cards from 2 to 10</li>
+        <li>4 face cards: Jack, Queen, King, Ace</li>
+        <li>Special card without a suit: Joker</li>
+    </ul>
+</ul>
+<div style="text-align: right; font-size: 14px; clear: both; margin-top: 24px">
+    <a href="https://www.flickr.com/photos/crackdog/5379514209/">Image: Vintage French playing card by William Creswell, License: CC 2.0</a>
+</div>
+</section>
+<section >
+<h2>Additional requirements</h2>
+<ol>
+<li><p><strong>Implement a standalone data model, not tied to any algorithm</strong></p></li>
+<li>
+<p><strong>Adhere to Domain Driven Design</strong><br />
+Main principles</p>
+<ul>
+<li>Use terminology natural to domain experts</li>
+<li>Make illegal states not representable</li>
+</ul>
+</li>
+</ol>
+</section>
+<section >
+<h2>"Business" logic example:<br />Rummy scoring</h2>
+<ul>
+<li>
+Calculate the score of a card in Rummy
+<ul>
+<li>Queen of spades: 40</li>
+<li>Aces: 15</li>
+<li>Other face cards: 10</li>
+<li>10s: 10</li>
+<li>Everything else: 5</li>
+</ul>
+</li>
+</ul>
+</section>
+<section >
+<h2>Data models in OO languages</h2>
+<ul>
+<li>Immutability is not the default</li>
+<li>"Either" is not easy to express</li>
+<li>Inheritance and pure data do not play well</li>
+</ul>
+</section>
+<section >
+<h2>Data types in FP languages</h2>
+<ul>
+<li>Immutability by default</li>
+<li>Composability</li>
+<li>Value semantics</li>
+<li>Originates from set theory and category theory</li>
+</ul>
+</section>
+<section >
+<h2>Record</h2>
+<ul>
+<li>Immutable reference type objects</li>
+</ul>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="k">type</span> <span class="i">Person</span> <span class="o">=</span> {
+    <span class="i">FirstName</span> <span class="o">:</span> <span class="i">string</span>
+    <span class="i">LastName</span> <span class="o">:</span> <span class="i">string</span>
+    <span class="i">Age</span> <span class="o">:</span> <span class="i">int</span>
+}
+</code></pre></td>
+</tr>
+</table>
+</section>
+<section >
+<h2>Record</h2>
+<ul>
+<li>Immutable by default</li>
+</ul>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+<span class="l">7: </span>
+<span class="l">8: </span>
+<span class="l">9: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="k">type</span> <span class="i">Person</span> <span class="o">=</span> {
+    <span class="i">FirstName</span> <span class="o">:</span> <span class="i">string</span>
+    <span class="i">LastName</span> <span class="o">:</span> <span class="i">string</span>
+    <span class="i">Age</span> <span class="o">:</span> <span class="i">int</span>
+}
+
+<span class="k">let</span> <span class="i">p</span> <span class="o">=</span> { <span class="i">FirstName</span> <span class="o">=</span> <span class="s">&quot;Jane&quot;</span>; <span class="i">LastName</span> <span class="o">=</span> <span class="s">&quot;Smith&quot;</span>; <span class="i">Age</span> <span class="o">=</span> <span class="n">25</span> }
+
+<span class="i">p</span><span class="o">.</span><span class="i">Age</span> <span class="o">&lt;-</span> <span class="n">30</span> <span class="c">// This doesn&#39;t compile</span>
+</code></pre></td>
+</tr>
+</table>
+</section>
+<section >
+<h2>Record</h2>
+<ul>
+<li>Opt-in for mutability</li>
+</ul>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+<span class="l">7: </span>
+<span class="l">8: </span>
+<span class="l">9: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="k">type</span> <span class="i">Person</span> <span class="o">=</span> {
+    <span class="i">FirstName</span> <span class="o">:</span> <span class="i">string</span>
+    <span class="i">LastName</span> <span class="o">:</span> <span class="i">string</span>
+    <span class="k">mutable</span> <span class="i">Age</span> <span class="o">:</span> <span class="i">int</span>
+}
+
+<span class="k">let</span> <span class="i">p</span> <span class="o">=</span> { <span class="i">FirstName</span> <span class="o">=</span> <span class="s">&quot;Jane&quot;</span>; <span class="i">LastName</span> <span class="o">=</span> <span class="s">&quot;Smith&quot;</span>; <span class="i">Age</span> <span class="o">=</span> <span class="n">25</span> }
+
+<span class="i">p</span><span class="o">.</span><span class="i">Age</span> <span class="o">&lt;-</span> <span class="n">30</span> <span class="c">// Now this works</span>
+</code></pre></td>
+</tr>
+</table>
+</section>
+<section >
+<h2>Tuple</h2>
+<ul>
+<li>Multiple values put together</li>
+</ul>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="k">let</span> <span class="i">point</span> <span class="o">=</span> (<span class="n">1.5</span>, <span class="n">4.3</span>)  
+<span class="k">let</span> <span class="i">personWithAge</span> <span class="o">=</span> (<span class="s">&quot;Jane Smith&quot;</span>, <span class="n">25</span>) 
+
+<span class="k">let</span> <span class="i">x</span>, <span class="i">y</span> <span class="o">=</span> <span class="i">point</span>
+
+<span class="k">type</span> <span class="i">MyTuple</span> <span class="o">=</span> <span class="i">string</span> <span class="o">*</span> <span class="i">int</span> <span class="o">*</span> <span class="i">Person</span>
+</code></pre></td>
+</tr>
+</table>
+</section>
+<section >
+<h2>Tuple</h2>
+<p>Also called: <strong>Product type</strong></p>
+<div>
+    <div style="display: inline-block;">
+        <h2>A</h2>
+        <table>
+            <tr><td>a1</tr></td>
+            <tr><td>a2</tr></td>
+            <tr><td>a3</tr></td>
+        </table>
+    </div>
+    <div style="display: inline-block;">
+        <h2>*</h2>
+    </div>
+    <div style="display: inline-block;">
+        <h2>B</h2>
+        <table>
+            <tr><td>b1</tr></td>
+            <tr><td>b2</tr></td>
+        </table>
+    </div>
+    <div style="display: inline-block;">
+        <h2>=</h2>
+    </div>
+    <div style="display: inline-block;">
+        <h2>A*B</h2>
+        <table>
+            <tr><td>a1, b1</tr></td>
+            <tr><td>a2, b1</tr></td>
+            <tr><td>a3, b1</tr></td>
+            <tr><td>a1, b2</tr></td>
+            <tr><td>a2, b2</tr></td>
+            <tr><td>a3, b2</tr></td>
+        </table>
+    </div>
+</div>
+</section>
+<section >
+<h2>Discriminated union</h2>
+<ul>
+<li>
+Represents a choice of multiple options<br />
+Example without data
+</li>
+</ul>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="k">type</span> <span class="i">LoggingLevel</span> <span class="o">=</span>  
+| <span class="i">Debug</span>
+| <span class="i">Info</span>
+| <span class="i">Error</span>
+
+<span class="k">let</span> <span class="i">level</span> <span class="o">=</span> <span class="i">Info</span>
+</code></pre></td>
+</tr>
+</table>
+</section>
+<section >
+<h2>Discriminated union</h2>
+<ul>
+<li>
+Every case can have a value<br />
+Example
+</li>
+</ul>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="k">type</span> <span class="i">Shape</span> <span class="o">=</span>  
+| <span class="i">Circle</span> <span class="k">of</span> <span class="i">radius</span> <span class="o">:</span> <span class="i">float</span>
+| <span class="i">Rectangle</span> <span class="k">of</span> <span class="i">width</span> <span class="o">:</span> <span class="i">float</span> <span class="o">*</span> <span class="i">height</span> <span class="o">:</span> <span class="i">float</span>
+
+<span class="k">let</span> <span class="i">circ</span> <span class="o">=</span> <span class="i">Circle</span> (<span class="n">2.0</span>) 
+<span class="k">let</span> <span class="i">rect</span> <span class="o">=</span> <span class="i">Rectangle</span> (<span class="i">width</span> <span class="o">=</span> <span class="n">10.0</span>, <span class="i">height</span> <span class="o">=</span> <span class="n">2.3</span>)
+</code></pre></td>
+</tr>
+</table>
+</section>
+<section >
+<h2>Discriminated union</h2>
+<ul>
+<li>Usage, pattern matching</li>
+</ul>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="k">let</span> <span class="i">calculateArea</span> <span class="i">shape</span> <span class="o">=</span>  
+    <span class="k">match</span> <span class="i">shape</span> <span class="k">with</span>
+    | <span class="i">Rectangle</span> (<span class="i">w</span>, <span class="i">h</span>) <span class="k">-&gt;</span> <span class="i">w</span> <span class="o">*</span> <span class="i">h</span>
+    | <span class="i">Circle</span> <span class="i">r</span> <span class="k">-&gt;</span> <span class="i">r</span> <span class="o">*</span> <span class="i">r</span> <span class="o">*</span> <span class="n">3.14</span>
+
+<span class="k">let</span> <span class="i">circleArea</span> <span class="o">=</span> <span class="i">calculateArea</span> (<span class="i">Circle</span> <span class="n">5</span>)
+</code></pre></td>
+</tr>
+</table>
+</section>
+<section >
+<h2>Discriminated union</h2>
+<p>Also called: <strong>Sum type</strong></p>
+<div>
+    <div style="display: inline-block;">
+        <h2>A</h2>
+        <table>
+            <tr><td>a1</tr></td>
+            <tr><td>a2</tr></td>
+            <tr><td>a3</tr></td>
+        </table>
+    </div>
+    <div style="display: inline-block;">
+        <h2>+</h2>
+    </div>
+    <div style="display: inline-block;">
+        <h2>B</h2>
+        <table>
+            <tr><td>b1</tr></td>
+            <tr><td>b2</tr></td>
+        </table>
+    </div>
+    <div style="display: inline-block;">
+        <h2>=</h2>
+    </div>
+    <div style="display: inline-block;">
+        <h2>A+B</h2>
+        <table>
+            <tr><td>A a1</tr></td>
+            <tr><td>A a2</tr></td>
+            <tr><td>A a3</tr></td>
+            <tr><td>B b1</tr></td>
+            <tr><td>B b2</tr></td>
+        </table>
+    </div>
+</div>
+</section>
+<section >
+<h2>Discriminated unions in practice</h2>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+<span class="l">11: </span>
+<span class="l">12: </span>
+<span class="l">13: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="k">type</span> <span class="i">OperationResult</span> <span class="o">=</span>  
+| <span class="i">Success</span> <span class="k">of</span> <span class="i">data</span> <span class="o">:</span> <span class="i">Data</span>
+| <span class="i">NotFound</span>
+| <span class="i">Error</span> <span class="k">of</span> <span class="i">errorMessage</span> <span class="o">:</span> <span class="i">string</span>
+
+<span class="k">type</span> <span class="i">HttpRequest</span> <span class="o">=</span>  
+| <span class="i">Get</span> <span class="k">of</span> <span class="i">url</span> <span class="o">:</span> <span class="i">string</span>
+| <span class="i">Post</span> <span class="k">of</span> <span class="i">url</span> <span class="o">:</span> <span class="i">string</span> <span class="o">*</span> <span class="i">body</span> <span class="o">:</span> <span class="i">byte</span> <span class="i">array</span>
+
+<span class="k">type</span> <span class="i">Credentials</span> <span class="o">=</span>  
+| <span class="i">UserPass</span> <span class="k">of</span> <span class="i">user</span> <span class="o">:</span> <span class="i">string</span> <span class="o">*</span> <span class="i">password</span> <span class="o">:</span> <span class="i">string</span>
+| <span class="i">Certificate</span> <span class="k">of</span> <span class="i">certFilePath</span> <span class="o">:</span> <span class="i">string</span>
+| <span class="i">None</span>
+</code></pre></td>
+</tr>
+</table>
+</section>
+<section >
+<h3>Thank you!</h3>
+<ul>
+<li>More details: <a href="https://blog.markvincze.com/a-data-model-exercise-in-two-languages-part-1-c">https://blog.markvincze.com/a-data-model-exercise-in-two-languages-part-1-c</a></li>
+<li>F# reference: <a href="https://fsharpforfunandprofit.com">https://fsharpforfunandprofit.com</a></li>
+<li>FizzBuzz in C#, Haskell and Clojure: <a href="https://vimeo.com/180578019">https://vimeo.com/180578019</a></li>
+<li>A more complex DDD example in F#: <a href="https://vimeo.com/162036084">https://vimeo.com/162036084</a></li>
+<li>F# intro for C# devs: <a href="https://www.youtube.com/watch?v=KPa8Yw_Navk">https://www.youtube.com/watch?v=KPa8Yw_Navk</a></li>
+<li>Functional Domain Modeling with F#: <a href="https://www.youtube.com/watch?v=Up7LcbGZFuo">https://www.youtube.com/watch?v=Up7LcbGZFuo</a></li>
+</ul>
+</section>
+
+
+        </div>
+    </div>
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+    <script>
+        // Add the nohighlight class and data-noescape attribute to code elements that have already been formatted by FSharp.Formatting
+        $('pre.highlighted code').addClass('nohighlight').attr('data-noescape', '');
+
+        // Full list of configuration options available here:
+        // https://github.com/hakimel/reveal.js#configuration
+        Reveal.initialize({
+            controls: true,
+            progress: true,
+            history: true,
+            center: true,
+
+            transition: 'none', // default/cube/page/concave/zoom/linear/fade/none
+
+            // Parallax scrolling
+            // parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+            // parallaxBackgroundSize: '2100px 900px',
+
+            // Optional libraries used to extend on reveal.js
+            dependencies: [
+                { src: 'lib/js/classList.js', condition: function () { return !document.body.classList; } },
+                { src: 'plugin/markdown/marked.js', condition: function () { return !!document.querySelector('[data-markdown]'); } },
+                { src: 'plugin/markdown/markdown.js', condition: function () { return !!document.querySelector('[data-markdown]'); } },
+                { src: 'plugin/highlight/highlight.js', async: true, callback: function () { hljs.initHighlightingOnLoad(); } },
+                { src: 'plugin/zoom-js/zoom.js', async: true, condition: function () { return !!document.body.classList; } },
+                { src: 'plugin/notes/notes.js', async: true, condition: function () { return !!document.body.classList; } }
+            ]
+        });
+
+    </script>
+</body>
+</html>
+
